@@ -181,7 +181,8 @@ app.post('/addPost',upload.single('upload'),async(req,res)=>{
                 Caption:req.body.caption,
                 Image:req.file.location,
                 Comments:[],
-                Time:(date.getHours()+':'+date.getMinutes()+':'+date.getSeconds()+'-'+date.getDate()+'/'+date.getMonth()+'/'+date.getFullYear())
+                Time:(date.getHours()+':'+date.getMinutes()+':'+date.getSeconds()+'-'+date.getDate()+'/'+date.getMonth()+'/'+date.getFullYear()),
+                TimeStamp:date.getTime()
             }
         }
         await db.put(params).promise()
@@ -197,7 +198,8 @@ app.get('/getAllPosts',async(req,res)=>{
     }
     try{
         const {Items=[]}=await db.scan(params).promise()
-        res.send(Items)
+        const data=await Items.sort((a,b)=>{return a.TimeStamp-b.TimeStamp})
+        res.send(data.reverse())
     }catch(error){
         res.send('some issue')
     }
