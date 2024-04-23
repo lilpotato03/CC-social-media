@@ -15,7 +15,7 @@ function App() {
     Image:'https://picsum.photos/200',
     Caption:'This is a post'
   }
-  const {modalState,loggedIn,currentView,setCurrentView}=useContext(Context)
+  const {modalState,loggedIn,currentView,setCurrentView,currentUse,profileData}=useContext(Context)
   const [postData,setPostData]=useState([])
   const [genPosts,setGenPosts]=useState(false)
   function genPost(){
@@ -44,7 +44,7 @@ function App() {
 
       {/* <Home genPost={genPost} genPosts={genPosts}/> */}
    {currentView==='home'?<Home genPost={genPost} genPosts={genPosts}/>:<></>}
-   {currentView==='profile'?<Profile />:<></>}
+   {currentView==='profile'?<Profile type={profileData[0]} user={profileData[1]} />:<></>}
       {modalState?<Modal />:<></>}
     </div>
   )

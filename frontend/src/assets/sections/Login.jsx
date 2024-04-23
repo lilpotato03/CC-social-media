@@ -28,7 +28,7 @@ function Login() {
         }
     }
     async function addUser(){
-    const result=await axios.post('/api/addUser',{Username:un,Password:pw,Email:em},{headers: {
+    const result=await axios.post('/api/addUser',{Username:un,Password:pw,Email:em,Followers:[''],Following:[''],Posts:['']},{headers: {
         'Content-Type': 'application/x-www-form-urlencoded'
       }})
       await console.log(result.data)

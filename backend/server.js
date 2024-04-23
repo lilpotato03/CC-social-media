@@ -173,10 +173,11 @@ app.post('/verifyUser',async(req,res)=>{
 app.post('/addPost',upload.single('upload'),async(req,res)=>{
     try{
         const date=new Date()
+        const postId=crypto.randomUUID()
         const params={
             TableName:'Posts',
             Item:{
-                PostId:crypto.randomUUID(),
+                PostId:postId,
                 Username:req.body.username,
                 Caption:req.body.caption,
                 Image:req.file.location,
@@ -186,7 +187,12 @@ app.post('/addPost',upload.single('upload'),async(req,res)=>{
             }
         }
         await db.put(params).promise()
-        console.log(params)
+        await db.update({
+            TableName:'Accounts',
+            Key:{Username:req.body.username},
+            UpdateExpression:'SET Posts = list_append(Posts, :post)',
+            ExpressionAttributeValues:{':post':[postId]}
+        }).promise()
         res.redirect('http://localhost:5173/')
     }catch(error){
         console.log(error.message)
@@ -204,6 +210,52 @@ app.get('/getAllPosts',async(req,res)=>{
         res.send('some issue')
     }
 })
+app.post('/getUserPosts',async(req,res)=>{
+    const params={
+        TableName:'Posts',
+        FilterExpression:'Username= :user',
+        ExpressionAttributeValues:{':user':req.body.username}
+    }
+    try{
+        const {Items=[]}=await db.scan(params).promise()
+        const data=await Items.sort((a,b)=>{return a.TimeStamp-b.TimeStamp})
+        res.send(data.reverse())
+    }catch(error){
+        res.send(error.message)
+    }
+})
+app.post('/searchUsers',async(req,res)=>{
+    const params={
+        TableName:'Accounts',
+        FilterExpression:'contains(Username, :user)',
+        ExpressionAttributeValues:{
+            ':user':req.body.searchTxt
+        }
+    }
+    try{
+        const {Items=[]}=await db.scan(params).promise()
+        res.send(Items)
+    }catch(err){
+        console.log(err)
+    }
 
+})
+
+app.post('/getUser',async(req,res)=>{
+    const params={
+        TableName:'Accounts',
+        KeyConditionExpression:'Username= :user',
+        ExpressionAttributeValues:{
+            ':user':req.body.username
+        },
+        ProjectionExpression:'Username,Followers,Following,Posts'
+    }
+    try{
+        const result=await db.query(params).promise()
+        res.send(result.Items)
+    }catch(err){
+        res.send(err.message)
+    }
+})
 
 // console.log(crypto.randomUUID())
