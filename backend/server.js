@@ -224,6 +224,29 @@ app.post('/getUserPosts',async(req,res)=>{
         res.send(error.message)
     }
 })
+app.post('/getFollowingPosts',async (req,res)=>{
+    const users=await req.body.users
+    var userObject = {};
+    var index = 0;
+    await users.forEach(function(user) {
+        index++;
+        var userKey = ":user"+index;
+        userObject[userKey.toString()] = user;
+    });
+    const params={
+        TableName:'Posts',
+        FilterExpression:"Username IN ("+Object.keys(userObject).toString()+ ")",
+        ExpressionAttributeValues:userObject
+    }
+    try{
+        const {Items=[]}=await db.scan(params).promise()
+        const data=await Items.sort((a,b)=>{return a.TimeStamp-b.TimeStamp})
+        console.log(req.body.users)
+        res.send(data.reverse())
+    }catch(error){
+        res.send(error)
+    }
+})
 app.post('/searchUsers',async(req,res)=>{
     const params={
         TableName:'Accounts',
@@ -255,6 +278,63 @@ app.post('/getUser',async(req,res)=>{
         res.send(result.Items)
     }catch(err){
         res.send(err.message)
+    }
+})
+
+app.post('/sendFollow',async(req,res)=>{
+    const params={
+        TableName:'Accounts',
+        KeyConditionExpression:'Username= :user',
+        ExpressionAttributeValues:{
+            ':user':req.body.follower
+        },
+        ProjectionExpression:'Username,Followers,Following,Posts'
+    }
+    const params2={
+        TableName:'Accounts',
+        KeyConditionExpression:'Username= :user',
+        ExpressionAttributeValues:{
+            ':user':req.body.toFollow
+        },
+        ProjectionExpression:'Username,Followers,Following,Posts'
+    }
+    try{
+        const follower=await db.query(params).promise()
+        const toFollow=await db.query(params2).promise()
+        const followerList=(follower.Items[0].Following)
+        const toFollowList=(toFollow.Items[0].Followers)
+            if(followerList.includes(toFollow.Items[0].Username)){  
+                console.log('exists')
+                const fl_index=String(followerList.indexOf(toFollow.Items[0].Username))
+                const tf_index=String(toFollowList.indexOf(follower.Items[0].Username))
+                console.log(fl_index,tf_index)
+                await db.update({
+                    TableName:'Accounts',
+                    Key:{Username:follower.Items[0].Username},
+                    UpdateExpression:'REMOVE Following['+fl_index+']'
+                }).promise()
+                await db.update({
+                    TableName:'Accounts',
+                    Key:{Username:toFollow.Items[0].Username},
+                    UpdateExpression:'REMOVE Followers['+tf_index+']',  
+                }).promise()
+            }else{
+                console.log('added')
+                await db.update({
+                    TableName:'Accounts',
+                    Key:{Username:follower.Items[0].Username},
+                    UpdateExpression:'SET Following = list_append(Following, :user)',
+                    ExpressionAttributeValues:{':user':[toFollow.Items[0].Username]}
+                }).promise()
+                await db.update({
+                    TableName:'Accounts',
+                    Key:{Username:toFollow.Items[0].Username},
+                    UpdateExpression:'SET Followers = list_append(Followers, :user)',
+                    ExpressionAttributeValues:{':user':[follower.Items[0].Username]}
+                }).promise()
+            }
+    }catch(err){
+        console.log(err)
     }
 })
 

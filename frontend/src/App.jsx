@@ -15,7 +15,7 @@ function App() {
     Image:'https://picsum.photos/200',
     Caption:'This is a post'
   }
-  const {modalState,loggedIn,currentView,setCurrentView,currentUse,profileData}=useContext(Context)
+  const {modalState,loggedIn,currentView,setCurrentView,currentUser,profileData}=useContext(Context)
   const [postData,setPostData]=useState([])
   const [genPosts,setGenPosts]=useState(false)
   function genPost(){
@@ -30,7 +30,9 @@ function App() {
   }
   useEffect(()=>{
     const getData=async()=>{
-      const result=await axios.get('/api/getAllPosts')
+      const user=await axios.post('/api/getUser',{username:currentUser},{headers: {'Content-Type': 'application/x-www-form-urlencoded'}})
+      const following=await user.data[0].Following
+      const result=await axios.post('/api/getFollowingPosts',{users:following},{headers: {'Content-Type': 'application/x-www-form-urlencoded'}})
       setPostData(result.data)
     }
     getData()

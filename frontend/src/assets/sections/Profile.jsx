@@ -1,20 +1,40 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState,useContext} from 'react'
 import ProfileIcon from '../components/ProfileIcon'
 import axios from 'axios'
+import { Context } from '../../context/AppContext'
 
 function Profile(props) {
 
   const [userData,setUserData]=useState({})
   const [userPostData,setUserPostData]=useState([])
+  const {currentUser}=useContext(Context)
+  const [sFol,setSFol]=useState(false)
+  const [folStatus,setFolStatus]=useState(null)
   useEffect(()=>{
     const getData=async ()=>{
       const result=await axios.post('/api/getUser',{username:props.user},{headers: {'Content-Type': 'application/x-www-form-urlencoded'}})
       const posts=await axios.post('/api/getUserPosts',{username:props.user},{headers: {'Content-Type': 'application/x-www-form-urlencoded'}})
+      if(result.data[0].Followers.includes(currentUser)){
+        setFolStatus(true)
+      }
+      else{
+        setFolStatus(false)
+      }
       setUserPostData(posts.data)
       setUserData(result.data[0])
     }
     getData()
-  },[userData])
+  },[userData,folStatus])
+
+  useEffect(()=>{
+    const sendReq=async ()=>{
+      const result=await axios.post('/api/sendFollow',{follower:currentUser,toFollow:props.user},{headers:{'Content-Type': 'application/x-www-form-urlencoded'}})
+    }
+    if(sFol){
+      sendReq()
+      setSFol(false)
+    }
+  },[sFol])
   return (
     <div className="md:ml-[10rem] h-full flex flex-col items-center">
       <div className=" flex justify-center w-full h-[10rem] gap-x-5 items-center px-1">
@@ -23,7 +43,9 @@ function Profile(props) {
           <div className="flex gap-x-5">
           <h1 className="font-bold text-[25px]">{userData.Username}</h1>
           
-          {props.type==='user'?<button className="bg-neutral-600 px-2 py-1 rounded-lg">Edit profile</button>:<button className="bg-blue-600 px-2 py-1 rounded-lg">Follow</button>}
+          {props.type==='user'?<button className="bg-neutral-600 px-2 py-1 rounded-lg">Edit profile</button>:folStatus?
+          <button className="bg-neutral-600 px-2 py-1 rounded-lg" onClick={()=>{setSFol(true)}}>Following</button>:
+          <button className="bg-blue-600 px-2 py-1 rounded-lg" onClick={()=>{setSFol(true)}}>Follow</button>}
           </div>
           <div className="w-full h-10 flex gap-x-4 font-semibold  text-[18px]">
             <div>{userData.Posts?userData.Posts.length-1:'NaN'} posts</div>
