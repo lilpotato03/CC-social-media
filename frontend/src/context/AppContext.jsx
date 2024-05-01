@@ -7,8 +7,8 @@ function AppContext({children}){
 
     const [modalState,setModalState]=useState(false)
     const [modalContent,setModalContent]=useState(<></>)
-    const [loggedIn,setLoggedIn]=useState(true)
-    const [currentUser,setCurrentUser]=useState('anuff_')
+    const [loggedIn,setLoggedIn]=useState(false)
+    const [currentUser,setCurrentUser]=useState('')
     const [currentView,setCurrentView]=useState('home')
     const [profileData,setProfileData]=useState(['user',currentUser])
 

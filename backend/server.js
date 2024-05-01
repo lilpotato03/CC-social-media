@@ -26,6 +26,8 @@ const s3=new AWS.S3()
 
 const myBucket=process.env.S3_BUCKET_NAME
 
+const date=new Date()
+
 
 const storage=multerS3({
     s3:s3,
@@ -99,6 +101,75 @@ function crPostTable(){
       })
 
 }
+function crSessionTable(){
+    const params={
+        AttributeDefinitions:[
+            {
+                AttributeName:'SessionId',
+                AttributeType:'S'
+            }
+        ],
+        KeySchema:[
+            {
+                AttributeName:'SessionId',
+                KeyType:'HASH'
+            }
+        ],
+        TableName:'Sessions',
+        BillingMode:'PROVISIONED',
+        ProvisionedThroughput: {
+            ReadCapacityUnits: 10,
+            WriteCapacityUnits: 10,
+        }
+    }
+    ddb.createTable(params,(err, data)=>{
+        if (err) {
+          console.log("Error", err);
+        } else {
+          console.log("Table Created", data);
+        }
+      })
+
+}
+async function addSession(username,res){
+    const sessionId=await crypto.randomUUID()
+    const cDate=new Date()
+    cDate.setTime(cDate.getTime()+(24 * 60 * 60 * 1000))
+    const expires = cDate.toUTCString()
+        const params={
+            TableName:'Sessions',
+            Item:{
+                SessionId:sessionId,
+                Username:username,
+                LoggedIn:(date.getHours()+':'+date.getMinutes()+':'+date.getSeconds()+'-'+date.getDate()+'/'+date.getMonth()+'/'+date.getFullYear()),
+                LoggedOut:"Not logged out",
+                Active:true
+            }
+        }
+        await db.put(params).promise()
+        res.set('Set-cookie',`session=${sessionId};expires=${expires};`)
+}
+
+async function getAuth(req,res){
+    if(req.headers.cookie){
+        const sessionId=req.headers.cookie?.split('=')[1]
+        const params={
+            TableName:'Sessions',
+            Key:{SessionId:sessionId}
+        }
+        const {Item}=await db.get(params).promise()
+        if(!Item){
+            res.status(400)
+            res.send('Not Authorized')
+        }
+    }
+    else{
+        res.status(400)
+        res.send('Not Authorized')   
+ }
+}
+
+// crSessionTable()
 
 // crAccountTable()
 
@@ -119,12 +190,13 @@ app.get('/',(req,res)=>{
     }
 })
 app.get('/readAllUsers',async (req,res)=>{
-    const params={
-        TableName:'Accounts'
-    }
     try{
+        const params={
+            TableName:'Accounts'
+        }
+        await getAuth(req,res)
         const {Items=[]}=await db.scan(params).promise()
-        console.log('Request came through')
+        console.log(req.headers.cookie?.split('=')[1])
         res.send(Items)
     }catch(error){
         res.send('some issue')
@@ -138,6 +210,7 @@ app.post('/addUser',async(req,res)=>{
         }
         console.log(params)
         await db.put(params).promise()
+        await addSession(req.body.username,res)
         res.send(200)
     }catch(error){
         res.send(400)
@@ -155,24 +228,71 @@ app.post('/verifyUser',async(req,res)=>{
         }
         const {Item}=await db.get(params).promise()
         if(Item.Password===data.password){
-            res.send('valid')
-            console.log('valid login')
-            console.log(data)
+            await addSession(data.username,res)
+            res.send(true)
         }  
         else {
-            res.send('invalid')
-            console.log('invalid')
-            console.log(data)
+            res.send(false)
+
         }
     }catch(error){
+        res.status(400)
         res.send('Incorrect Username or password')
-        console.log(error.message   )
+        console.log(error)
     }
 })
-
+app.get('/auth',async(req,res)=>{
+    try{
+        if(req.headers.cookie){
+            const sessionId=req.headers.cookie?.split('=')[1]
+        const params={
+            TableName:'Sessions',
+            Key:{SessionId:sessionId}
+        }
+        const {Item}=await db.get(params).promise()
+        if(Item){
+            res.status(200)
+            res.send(Item.Username)
+        }
+        else{
+            res.status(400)
+            res.send('Not authorised')
+        }
+        }
+        else{
+            res.status(400)
+            res.send('Not authorised')
+        }
+    }catch(error){
+        console.log(error)
+        res.status(400)
+        res.send('Not authorised')
+    }
+})
+app.get('/logout',async (req,res)=>{
+    try{
+        const sessionId=req.headers.cookie?.split('=')[1]
+        if(sessionId){
+        await db.update({
+            TableName:'Sessions',
+            Key:{SessionId:sessionId},
+            UpdateExpression:'SET Active= :active , LoggedOut= :logged',
+            ExpressionAttributeValues:{':active':false,':logged':(date.getHours()+':'+date.getMinutes()+':'+date.getSeconds()+'-'+date.getDate()+'/'+date.getMonth()+'/'+date.getFullYear())}
+        }).promise()
+        res.set('Set-Cookie','session=; expires=Thu, 01-Jan-70 00:00:01 GMT;')
+        res.send('loggedOut')
+        }
+        else{
+            res.send('no cookie')
+        }
+    }catch(error){
+        console.log(error)
+        res.send(400)
+    }
+})
 app.post('/addPost',upload.single('upload'),async(req,res)=>{
     try{
-        const date=new Date()
+        await getAuth(req,res)
         const postId=crypto.randomUUID()
         const params={
             TableName:'Posts',
@@ -199,10 +319,12 @@ app.post('/addPost',upload.single('upload'),async(req,res)=>{
     }
 })
 app.get('/getAllPosts',async(req,res)=>{
-    const params={
-        TableName:'Posts'
-    }
+
     try{
+        const params={
+            TableName:'Posts'
+        }
+        await getAuth(req,res)
         const {Items=[]}=await db.scan(params).promise()
         const data=await Items.sort((a,b)=>{return a.TimeStamp-b.TimeStamp})
         res.send(data.reverse())
@@ -211,12 +333,14 @@ app.get('/getAllPosts',async(req,res)=>{
     }
 })
 app.post('/getUserPosts',async(req,res)=>{
-    const params={
-        TableName:'Posts',
-        FilterExpression:'Username= :user',
-        ExpressionAttributeValues:{':user':req.body.username}
-    }
+
     try{
+        const params={
+            TableName:'Posts',
+            FilterExpression:'Username= :user',
+            ExpressionAttributeValues:{':user':req.body.username}
+        }
+        await getAuth(req,res)
         const {Items=[]}=await db.scan(params).promise()
         const data=await Items.sort((a,b)=>{return a.TimeStamp-b.TimeStamp})
         res.send(data.reverse())
@@ -225,7 +349,9 @@ app.post('/getUserPosts',async(req,res)=>{
     }
 })
 app.post('/getFollowingPosts',async (req,res)=>{
-    const users=await req.body.users
+    
+    try{
+        const users=await req.body.users
     var userObject = {};
     var index = 0;
     await users.forEach(function(user) {
@@ -238,7 +364,7 @@ app.post('/getFollowingPosts',async (req,res)=>{
         FilterExpression:"Username IN ("+Object.keys(userObject).toString()+ ")",
         ExpressionAttributeValues:userObject
     }
-    try{
+        await getAuth(req,res)
         const {Items=[]}=await db.scan(params).promise()
         const data=await Items.sort((a,b)=>{return a.TimeStamp-b.TimeStamp})
         console.log(req.body.users)
@@ -248,14 +374,16 @@ app.post('/getFollowingPosts',async (req,res)=>{
     }
 })
 app.post('/searchUsers',async(req,res)=>{
-    const params={
-        TableName:'Accounts',
-        FilterExpression:'contains(Username, :user)',
-        ExpressionAttributeValues:{
-            ':user':req.body.searchTxt
-        }
-    }
+
     try{
+        const params={
+            TableName:'Accounts',
+            FilterExpression:'contains(Username, :user)',
+            ExpressionAttributeValues:{
+                ':user':req.body.searchTxt
+            }
+        }
+        await getAuth(req,res)
         const {Items=[]}=await db.scan(params).promise()
         res.send(Items)
     }catch(err){
@@ -263,42 +391,44 @@ app.post('/searchUsers',async(req,res)=>{
     }
 
 })
-
 app.post('/getUser',async(req,res)=>{
-    const params={
-        TableName:'Accounts',
-        KeyConditionExpression:'Username= :user',
-        ExpressionAttributeValues:{
-            ':user':req.body.username
-        },
-        ProjectionExpression:'Username,Followers,Following,Posts'
-    }
+
     try{
+        const params={
+            TableName:'Accounts',
+            KeyConditionExpression:'Username= :user',
+            ExpressionAttributeValues:{
+                ':user':req.body.username
+            },
+            ProjectionExpression:'Username,Followers,Following,Posts'
+        }
+        await getAuth(req,res)
         const result=await db.query(params).promise()
         res.send(result.Items)
     }catch(err){
         res.send(err.message)
     }
 })
-
 app.post('/sendFollow',async(req,res)=>{
-    const params={
-        TableName:'Accounts',
-        KeyConditionExpression:'Username= :user',
-        ExpressionAttributeValues:{
-            ':user':req.body.follower
-        },
-        ProjectionExpression:'Username,Followers,Following,Posts'
-    }
-    const params2={
-        TableName:'Accounts',
-        KeyConditionExpression:'Username= :user',
-        ExpressionAttributeValues:{
-            ':user':req.body.toFollow
-        },
-        ProjectionExpression:'Username,Followers,Following,Posts'
-    }
+
     try{
+        const params={
+            TableName:'Accounts',
+            KeyConditionExpression:'Username= :user',
+            ExpressionAttributeValues:{
+                ':user':req.body.follower
+            },
+            ProjectionExpression:'Username,Followers,Following,Posts'
+        }
+        const params2={
+            TableName:'Accounts',
+            KeyConditionExpression:'Username= :user',
+            ExpressionAttributeValues:{
+                ':user':req.body.toFollow
+            },
+            ProjectionExpression:'Username,Followers,Following,Posts'
+        }
+        await getAuth(req,res)
         const follower=await db.query(params).promise()
         const toFollow=await db.query(params2).promise()
         const followerList=(follower.Items[0].Following)
@@ -337,5 +467,4 @@ app.post('/sendFollow',async(req,res)=>{
         console.log(err)
     }
 })
-
 // console.log(crypto.randomUUID())

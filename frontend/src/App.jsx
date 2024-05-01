@@ -15,12 +15,12 @@ function App() {
     Image:'https://picsum.photos/200',
     Caption:'This is a post'
   }
-  const {modalState,loggedIn,currentView,setCurrentView,currentUser,profileData}=useContext(Context)
+  const {modalState,loggedIn,setLoggedIn,currentView,setCurrentView,currentUser,setCurrentUser,profileData}=useContext(Context)
   const [postData,setPostData]=useState([])
   const [genPosts,setGenPosts]=useState(false)
+  const [authV,setAuthV]=useState(false)
   function genPost(){
     return(
-      
         postData.map((post)=>{
           return(
             <PostSections data={post} key={post.PostId} id={post.PostId}/>
@@ -29,15 +29,31 @@ function App() {
     )
   }
   useEffect(()=>{
+    const auth=async ()=>{
+      const result=await axios.get('/api/auth')
+      if(result.status===200){
+      console.log(result.status)
+      await setCurrentUser(result.data)
+      await setCurrentView('home')
+      await setLoggedIn(true)
+      await setAuthV(true)
+      }
+      else{
+        await setLoggedIn(false)
+      }
+    }
     const getData=async()=>{
       const user=await axios.post('/api/getUser',{username:currentUser},{headers: {'Content-Type': 'application/x-www-form-urlencoded'}})
       const following=await user.data[0].Following
       const result=await axios.post('/api/getFollowingPosts',{users:following},{headers: {'Content-Type': 'application/x-www-form-urlencoded'}})
       setPostData(result.data)
     }
-    getData()
-    setGenPosts(true)
-  },[loggedIn])
+    auth()
+    if(authV){
+      getData()
+      setGenPosts(true)
+    }
+  },[authV,currentUser])
 
   if(loggedIn){
   return (

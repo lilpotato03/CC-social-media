@@ -19,9 +19,10 @@ function Login() {
         const result=await axios.post('/api/verifyUser',{'username':un,'password':pw},{headers: {
             'Content-Type': 'application/x-www-form-urlencoded'
           }})
-        if(result.data=='valid'){
-            setLoggedIn(true)
-            setCurrentUser(un)
+        if(result.data==true){
+            await setLoggedIn(true)
+            await setCurrentUser(un)
+            await window.location('http://localhost:5173/')
         }
         else{
             console.log(result)
@@ -33,8 +34,7 @@ function Login() {
       }})
       await console.log(result.data)
         if(result.data==='OK'){
-            setLoggedIn(true)
-            setCurrentUser(un)
+            setToggleSignUp(!toggleSignUp)
         }
         else{
             console.log(result)
