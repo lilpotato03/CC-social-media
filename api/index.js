@@ -313,7 +313,7 @@ app.post('/addPost',upload.single('upload'),async(req,res)=>{
             UpdateExpression:'SET Posts = list_append(Posts, :post)',
             ExpressionAttributeValues:{':post':[postId]}
         }).promise()
-        res.redirect('http://localhost:5173/')
+        res.redirect('https://connectify-psi.vercel.app/')
     }catch(error){
         console.log(error.message)
     }
