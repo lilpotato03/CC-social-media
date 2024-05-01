@@ -51,7 +51,7 @@ function CreatePostModal() {
             </div>
            </div>
             <form  method='POST' action='/api/addPost' enctype="multipart/form-data" className='flex flex-col relative items-center justify-center px-2 h-[2rem] bg-blue-500 rounded-md font-bold text-white text-[13px] w-[15rem]' onSubmit={()=>{
-                window.location('http://localhost:5173/')
+                window.location('https://connectify-psi.vercel.app/')
                 return false
             }}>
               <label htmlFor="upload" className='absolute'>Select Photos and Videos to uplaod</label>
