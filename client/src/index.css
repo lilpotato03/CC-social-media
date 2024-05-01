@@ -7,7 +7,7 @@
         @apply absolute h-full w-[11rem]  left-0  flex flex-col p-5  gap-y-10 justify-center
     }
     .navbar-bottom{
-        @apply absolute w-full h-[10%] bottom-0  z-10 flex px-5 gap-x-[7%] justify-center
+        @apply fixed w-full h-[10%] bottom-0  z-10 flex px-5 gap-x-[7%] justify-center
     }
     .pfp_lg{
         @apply size-[60px]
