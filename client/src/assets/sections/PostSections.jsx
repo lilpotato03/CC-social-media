@@ -11,7 +11,7 @@ function PostSections(props) {
         <ProfileIcon />
         <h1 className='font-bold'>{props.data.Username}</h1>
       </div>
-      <div className=' border-neutral-400  w-full min-h-[24rem] min-w-[24rem] postContent'>
+      <div className=' border-neutral-400  w-full min-h-[20rem] min-w-[20rem] postContent'>
         <img src={props.data.Image} class='h-full w-full max-w-[25rem] max-h-[25rem] 'alt="" />
       </div>
       <div className=' w-full min-h-[3rem] postControls flex flex-col p-1 gap-y-1 mt-5'>

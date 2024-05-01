@@ -59,7 +59,7 @@ function Profile(props) {
       <div className="m-1 profile-grid  min-w-[21rem] w-[21rem] md:w-full max-w-[40rem]  flex gap-x-5 flex-wrap py-2  gap-y-2 overflow-scroll h-full md:px-10 px-3  pb-20">
         {userPostData?userPostData.map((e)=>{
           return(
-            <div className=" flex-shrink-0 md:w-[10rem] md:h-[10rem] w-[7rem] h-[7rem] bg-blue-400" key={e.PostId}>
+            <div className=" flex-shrink-0 md:w-[10rem] md:h-[10rem] w-[5rem] h-[5rem] bg-neutral-800" key={e.PostId}>
               <img src={e.Image} alt="" className='h-full w-full'/>
             </div>
           )
