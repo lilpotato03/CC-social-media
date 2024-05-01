@@ -1,1 +1,12 @@
-{ "routes": [{ "src": "/[^.]+", "dest": "/", "status": 200 }] } 
+{
+    "rewrites": [
+        {
+            "source": "/api/(.*)",
+            "destination": "https://cc-social-media-teal.vercel.app/$1"
+        },
+        {
+            "source": "/(.*)",
+            "destination": "/"
+        }
+    ]
+}
