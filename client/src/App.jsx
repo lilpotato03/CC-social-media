@@ -57,7 +57,7 @@ function App() {
 
   if(loggedIn){
   return (
-    <div className="bg-neutral-900 w-[100vw] h-[100vh]  text-white  md:pt-0">
+    <div className="bg-neutral-900 w-[100vw] h-[100vh] overflow-x-hidden  text-white  md:pt-0">
       <Navbar />
 
       {/* <Home genPost={genPost} genPosts={genPosts}/> */}

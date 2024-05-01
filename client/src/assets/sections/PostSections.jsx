@@ -6,7 +6,7 @@ function PostSections(props) {
 
   const {modalState,setModalState}=useContext(Context)
   return (
-    <div className=' max-w-[25rem]  min-h-[35rem] max-h-[45rem] w-[25rem] min-w-[10rem] flex flex-col rounded-md p-1 border-[1px] border-neutral-200'>
+    <div className=' max-w-[21rem]  min-h-[35rem] max-h-[45rem] w-[21rem] min-w-[10rem] flex flex-col rounded-md p-1 border-[1px] border-neutral-200'>
       <div className=' w-full min-h-[3rem] postHeader flex items-center px-2 gap-x-2 '>
         <ProfileIcon />
         <h1 className='font-bold'>{props.data.Username}</h1>
