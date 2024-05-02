@@ -314,6 +314,7 @@ app.post('/addPost',upload.single('upload'),async(req,res)=>{
             ExpressionAttributeValues:{':post':[postId]}
         }).promise()
         res.redirect('https://connectify-psi.vercel.app/')
+        // res.redirect('https://localhost:5173/')
     }catch(error){
         console.log(error.message)
     }

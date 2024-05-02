@@ -2,9 +2,18 @@ import React from 'react'
 import ProfileIcon from '../components/ProfileIcon'
 import { useContext } from 'react'
 import { Context } from '../../context/AppContext'
+import PostModal from '../components/PostModal'
 function PostSections(props) {
+  function genPostModal(data){
+    setModalState(!modalState)
+    setModalContent(()=>{
+      return(
+        <PostModal data={data}/>
+      )
+    })
+  }
 
-  const {modalState,setModalState}=useContext(Context)
+  const {modalState,setModalState,setModalContent}=useContext(Context)
   return (
     <div className=' max-w-[21rem]  min-h-[35rem] max-h-[45rem] w-[21rem] min-w-[10rem] flex flex-col rounded-md p-1 border-[1px] border-neutral-200'>
       <div className=' w-full min-h-[3rem] postHeader flex items-center px-2 gap-x-2 '>
@@ -56,8 +65,8 @@ function PostSections(props) {
       <p className='text-[13px]  mt-[1px]'>{props.data.Caption}</p>
       </div>
       <div className=' w-full min-h-[2rem] border-neutral-400 border-b-1 postComents p-2 flex flex-col gap-y-2 text-[10px]'>
-        <p className='cursor-pointer' onClick={()=>{setModalState(!modalState)}}>View 23 Comments</p>
-        <p className='cursor-pointer' onClick={()=>{setModalState(!modalState)}}>Add comment...</p>
+        <p className='cursor-pointer' onClick={()=>genPostModal(props.data)}>View 23 Comments</p>
+        <p className='cursor-pointer' onClick={()=>genPostModal(props.data)}>Add comment...</p>
       </div>
     </div>
   )

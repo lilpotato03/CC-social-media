@@ -2,7 +2,7 @@ import React, { useEffect, useState,useContext} from 'react'
 import ProfileIcon from '../components/ProfileIcon'
 import axios from 'axios'
 import { Context } from '../../context/AppContext'
-
+import PostModal from '../components/PostModal'
 function Profile(props) {
 
   const [userData,setUserData]=useState({})
@@ -10,6 +10,15 @@ function Profile(props) {
   const {currentUser}=useContext(Context)
   const [sFol,setSFol]=useState(false)
   const [folStatus,setFolStatus]=useState(null)
+  function genPostModal(data){
+    setModalState(!modalState)
+    setModalContent(()=>{
+      return(
+        <PostModal data={data}/>
+      )
+    })
+  }
+  const {modalState,setModalState,setModalContent}=useContext(Context)
   useEffect(()=>{
     const getData=async ()=>{
       const result=await axios.post('/api/getUser',{username:props.user},{headers: {'Content-Type': 'application/x-www-form-urlencoded'}})
@@ -60,7 +69,7 @@ function Profile(props) {
         {userPostData?userPostData.map((e)=>{
           return(
             <div className=" flex-shrink-0 md:w-[10rem] md:h-[10rem] w-[5rem] h-[5rem] bg-neutral-800" key={e.PostId}>
-              <img src={e.Image} alt="" className='h-full w-full'/>
+              <img src={e.Image} alt="" className='h-full w-full' onClick={()=>{genPostModal(e)}}/> 
             </div>
           )
         }):<></>}
